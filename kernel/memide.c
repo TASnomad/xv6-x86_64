@@ -4,6 +4,7 @@
 #include "types.h"
 #include "defs.h"
 #include "param.h"
+#include "fs.h"
 #include "mmu.h"
 #include "proc.h"
 #include "x86.h"
@@ -20,7 +21,12 @@ void
 ideinit(void)
 {
   memdisk = _binary_fs_img_start;
-  disksize = (uint)_binary_fs_img_size/BSIZE;
+  /**
+   * ERROR: Type cast mistmatching
+   * -: trivial cast to uint
+   * +: cast from uchar pointer to uint value by dereferencing uint pointer
+   */
+  disksize = *(uint *) _binary_fs_img_size / BSIZE;
 }
 
 // Interrupt handler.
@@ -44,10 +50,10 @@ iderw(struct buf *b)
     panic("iderw: nothing to do");
   if(b->dev != 1)
     panic("iderw: request not for disk 1");
-  if(b->block >= disksize)
+  if(b->blockno >= disksize)
     panic("iderw: block out of range");
 
-  p = memdisk + b->block*BSIZE;
+  p = memdisk + b->blockno * BSIZE;
   
   if(b->flags & B_DIRTY){
     b->flags &= ~B_DIRTY;
