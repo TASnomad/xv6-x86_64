@@ -11,9 +11,7 @@ uint version, processor, featuresExt, features;
 // leaf = 7
 uint sef_flags;
 
-static void
-cpu_printfeatures(void)
-{
+static void cpu_printfeatures(void) {
   uchar vendorStr[13];
   *(uint*)(&vendorStr[0]) = vendor[0];
   *(uint*)(&vendorStr[4]) = vendor[1];
@@ -100,9 +98,7 @@ cpu_printfeatures(void)
   }
 }
 
-static void
-cpuinfo(void)
-{
+static void cpuinfo(void) {
   // check for CPUID support by setting and clearing ID (bit 21) in EFLAGS
 
   // When EAX=0, the processor returns the highest value (maxleaf) recognized for processor information
@@ -143,22 +139,18 @@ cpuinfo(void)
   /* ... and many more ... */
 }
 
-static int cpuid_read(struct inode* i, char* buf, int count)
-{
+static int cpuid_read(struct inode* i, char* buf, int count) {
    cpu_printfeatures();
 
    return 0;
 }
 
-static int cpuid_write(struct inode* i, char* buf, int count)
-{
+static int cpuid_write(struct inode* i, char* buf, int count) {
    cprintf("cpuid_write\n");
    return 0;
 }
 
-void
-cpuidinit(void)
-{
+void cpuidinit(void) {
   devsw[CPUID].write = cpuid_write;
   devsw[CPUID].read = cpuid_read;
 

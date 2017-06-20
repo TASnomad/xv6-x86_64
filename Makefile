@@ -62,6 +62,9 @@ ifneq ("$(MEMFS)","")
 # instead of mounting the filesystem on ide1
 OBJS := $(filter-out ide.o,$(OBJS)) memide.o
 FSIMAGE := fs.img
+
+all: xv6memfs.img fs.img
+
 endif
 
 KOBJ_DIR = .kobj
@@ -182,6 +185,15 @@ $(OUT)/kernel.elf: $(OBJS) $(ENTRYCODE) $(OUT)/entryother $(OUT)/initcode $(LINK
 	@$(OBJDUMP) -t $(OUT)/kernel.elf | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $(OUT)/kernel.sym
 	@echo -e "[\e[1;32mGOOD\e[1;37m] $<"
 
+$(OUT)/kernelmemfs.elf: $(OBJS) $(ENTRYCODE) $(OUT)/entryother $(OUT)/initcode $(LINKSCRIPT) $(FSIMAGE)
+	@$(LD) $(LDFLAGS) -T $(LINKSCRIPT) -o $(OUT)/kernelmemfs.elf \
+		$(ENTRYCODE) $(OBJS) \
+		-b binary $(OUT)/initcode $(OUT)/entryother $(FSIMAGE)
+	@$(OBJDUMP) -S $(OUT)/kernelmemfs.elf > $(OUT)/kernelmemfs.asm
+	@$(OBJDUMP) -t $(OUT)/kernelmemfs.elf | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $(OUT)/kernelmemfs.sym
+	@echo -e "[\e[1;32mGOOD\e[1;37m] $<"
+
+
 MKVECTORS = tools/vectors$(BITS).pl
 kernel/vectors.S: $(MKVECTORS)
 	perl $(MKVECTORS) > kernel/vectors.S
@@ -265,8 +277,9 @@ UPROGS := $(addprefix $(FS_DIR)/,$(UPROGS))
 $(FS_DIR)/README: README
 	@mkdir -p $(FS_DIR)
 	cp -f README $(FS_DIR)/README
+	cp -f README.64bit $(FS_DIR)/README64
 
-fs.img: $(OUT)/mkfs $(FS_DIR)/README $(UPROGS)
+fs.img: $(OUT)/mkfs $(FS_DIR)/README $(FS_DIR)/README64 $(UPROGS)
 	@$(OUT)/mkfs $@ $(filter-out $(OUT)/mkfs,$^)
 
 -include */*.d
@@ -274,6 +287,8 @@ fs.img: $(OUT)/mkfs $(FS_DIR)/README $(UPROGS)
 clean: 
 	rm -rf $(OUT) $(FS_DIR) $(UOBJ_DIR) $(KOBJ_DIR)
 	rm -f kernel/vectors.S xv6.img xv6memfs.img fs.img .gdbinit
+	@echo -e "[\e[1;32mDONE\e[1;37m]"
+
 
 # run in emulators
 
@@ -296,7 +311,7 @@ qemu: fs.img xv6.img
 
 qemu-memfs: xv6memfs.img
 	@echo Ctrl+a h for help
-	$(QEMU) xv6memfs.img -smp $(CPUS)
+	$(QEMU) xv6memfs.img -smp $(CPUS) -m 256
 
 qemu-nox: fs.img xv6.img
 	@echo Ctrl+a h for help

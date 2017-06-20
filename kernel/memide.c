@@ -22,11 +22,12 @@ ideinit(void)
 {
   memdisk = _binary_fs_img_start;
   /**
-   * ERROR: Type cast mistmatching
-   * -: trivial cast to uint
-   * +: cast from uchar pointer to uint value by dereferencing uint pointer
+   * Dummy fix:
+   * use FSSIZE to feed disksize variable
    */
-  disksize = *(uint *) _binary_fs_img_size / BSIZE;
+  disksize = FSSIZE;
+  /*picenable(IRQ_IDE);
+  ioapicenable(IRQ_IDE, ncpu - 1);*/
 }
 
 // Interrupt handler.
