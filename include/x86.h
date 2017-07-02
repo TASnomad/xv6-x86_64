@@ -9,6 +9,14 @@ inb(ushort port)
   return data;
 }
 
+static inline ushort
+inw(ushort port)
+{
+  ushort data;
+  asm volatile("in %1,%0" : "=a" (data) : "d" (port));
+  return data;
+}
+
 static inline void
 insl(int port, void *addr, int cnt)
 {
@@ -55,6 +63,12 @@ stosl(void *addr, int data, int cnt)
                "=D" (addr), "=c" (cnt) :
                "0" (addr), "1" (cnt), "a" (data) :
                "memory", "cc");
+}
+
+static inline uint64 rdtsc(void) {
+  uint64 ret;
+  asm("rdtsc" : "=A"(ret));
+  return ret;
 }
 
 struct segdesc;

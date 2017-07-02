@@ -23,15 +23,15 @@
  *
  */
 
-#include "types.h"
-#include "defs.h"
-#include "param.h"
-#include "memlayout.h"
-#include "mp.h"
-#include "x86.h"
-#include "mmu.h"
-#include "proc.h"
-#include "acpi.h"
+#include <types.h>
+#include <defs.h>
+#include <param.h>
+#include <memlayout.h>
+#include <mp.h>
+#include <x86.h>
+#include <mmu.h>
+#include <proc.h>
+#include <acpi.h>
 
 extern struct cpu cpus[NCPU];
 extern int ismp;
@@ -59,7 +59,7 @@ static struct acpi_rdsp *find_rdsp(void) {
   if (pa && (rdsp = scan_rdsp(pa, 1024)))
     return rdsp;
   return scan_rdsp(0xE0000, 0x20000);
-} 
+}
 
 static int acpi_config_smp(struct acpi_madt *madt) {
   uint32 lapic_addr;
@@ -128,6 +128,9 @@ static int acpi_config_smp(struct acpi_madt *madt) {
 #else
 #define PHYSLIMIT 0x0E000000
 #endif
+
+/* dummy function to expose the possibilty to get an acpi table */
+struct acpi_rdsp *get_rdsp(void) { return find_rdsp(); }
 
 int acpiinit(void) {
   unsigned n, count;

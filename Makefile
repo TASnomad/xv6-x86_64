@@ -40,6 +40,7 @@ OBJS := \
 	main.o \
 	mp.o \
 	acpi.o \
+	poweroff.o \
 	picirq.o \
 	pipe.o \
 	proc.o \

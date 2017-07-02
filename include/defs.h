@@ -93,8 +93,9 @@ int             mpbcpu(void);
 void            mpinit(void);
 void            mpstartthem(void);
 
-// apic.c
+// acpi.c
 int             acpiinit(void);
+struct acpi_rdsp *get_rdsp(void);
 
 // cpuid.c
 void            cpuidinit(void);
@@ -188,6 +189,9 @@ void            switchuvm(struct proc*);
 void            switchkvm(void);
 int             copyout(pde_t*, uint, void*, uint);
 void            clearpteu(pde_t *pgdir, char *uva);
+
+/* poweroff.c */
+void			poweroff(void);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
