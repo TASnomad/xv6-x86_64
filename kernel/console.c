@@ -4,17 +4,17 @@
 
 #include <stdarg.h>
 
-#include "types.h"
-#include "defs.h"
-#include "param.h"
-#include "traps.h"
-#include "spinlock.h"
-#include "fs.h"
-#include "file.h"
-#include "memlayout.h"
-#include "mmu.h"
-#include "proc.h"
-#include "x86.h"
+#include <types.h>
+#include <defs.h>
+#include <param.h>
+#include <traps.h>
+#include <spinlock.h>
+#include <fs.h>
+#include <file.h>
+#include <memlayout.h>
+#include <mmu.h>
+#include <proc.h>
+#include <x86.h>
 
 static void consputc(int);
 
@@ -229,8 +229,17 @@ consoleintr(int (*getc)(void))
   acquire(&input.lock);
   while((c = getc()) >= 0){
     switch(c){
+
     case C('Z'): // reboot
-      lidt(0,0);
+      reboot();
+      break;
+    case C('A'):
+      poweroff();
+      break;
+
+    case C('L'):
+      clear_screen();
+      consputc('\n');
       break;
     case C('P'):  // Process listing.
       procdump();

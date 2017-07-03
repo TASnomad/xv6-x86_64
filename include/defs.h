@@ -192,6 +192,7 @@ void            clearpteu(pde_t *pgdir, char *uva);
 
 /* poweroff.c */
 void			poweroff(void);
+void			reboot(void);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))

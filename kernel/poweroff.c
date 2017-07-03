@@ -202,3 +202,14 @@ halt_only:
 	cprintf("System has been halted, you can safely turn-off your computer !\n");
 	hlt();
 }
+
+void reboot(void) {
+
+	/*
+	 * so far whitout ACPI and APM
+	 * the only way to reboot is to
+	 * load a null IDT,
+	 * doing this will create a triple fault and reset the PC
+	 */
+	lidt(0, 0);
+}
