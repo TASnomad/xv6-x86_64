@@ -54,6 +54,7 @@ OBJS := \
 	trapasm$(BITS).o \
 	trap.o \
 	uart.o \
+	uptime.o \
 	vectors.o \
 	vm.o \
 	$(XOBJS)
@@ -277,6 +278,7 @@ UPROGS := $(addprefix $(FS_DIR)/,$(UPROGS))
 
 $(FS_DIR)/README: README
 	@mkdir -p $(FS_DIR)
+	@mkdir -p $(FS_DIR)/dev
 	cp -f README $(FS_DIR)/README
 	cp -f README.64bit $(FS_DIR)/README64
 
@@ -312,7 +314,7 @@ qemu: fs.img xv6.img
 
 qemu-memfs: xv6memfs.img
 	@echo Ctrl+a h for help
-	$(QEMU) xv6memfs.img -smp $(CPUS) -m 256
+	$(QEMU) xv6memfs.img -smp $(CPUS) -m 224M
 
 qemu-nox: fs.img xv6.img
 	@echo Ctrl+a h for help

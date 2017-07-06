@@ -39,8 +39,9 @@ struct devsw {
 extern struct devsw devsw[];
 
 // major device numbers
-#define CONSOLE 1
-#define CPUID   2
+#define CONSOLE     1
+#define CPUID       2
+#define UPTIME_DEV  3
 
 //PAGEBREAK!
 // Blank page.

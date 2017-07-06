@@ -72,7 +72,7 @@ static struct acpi_fadt *findFADT(void) {
 	goto lookup_error;
 
 lookup_error:
-	cprintf("Cannot find intermetiades tables while searchinf FADT !\n");
+	cprintf("Cannot find intermetiades tables while searching FADT !\n");
 	return 0x0;
 }
 
@@ -80,7 +80,6 @@ static int find_dsdt(struct acpi_fadt *fadt) {
 	if(fadt == 0x0) return -1;
 
 	struct acpi_desc_header *hdr = 0x0;
-	// int i;
 
 	GET_ACPI_OBJ(hdr, struct acpi_desc_header, fadt->dsdt);
 
@@ -136,7 +135,7 @@ static int enable_acpi_operations(struct acpi_fadt *fadt) {
 			/* TODO: create a "real" sleep function */
 			for(i = 0; i < 300; i++) {
 				if((inw((uint32) fadt->PM1a_control_block) & SCI_EN)) break;
-				/*acquire(&tickslock);
+				acquire(&tickslock);
 				_tick_diff = ticks;
 				while(ticks - _tick_diff < sleep_time) {
 
@@ -146,7 +145,7 @@ static int enable_acpi_operations(struct acpi_fadt *fadt) {
 					}
 					sleep(&ticks, &tickslock);
 				}
-				release(&tickslock);*/
+				release(&tickslock);
 			}
 
 			if(fadt->PM1b_control_block != 0) {
@@ -205,11 +204,28 @@ halt_only:
 
 void reboot(void) {
 
+	struct acpi_fadt *fadt = 0x0;
+	struct acpi_generic_address addr;
+
+	fadt = findFADT();
+
+	addr = (fadt)->reset_reg;
+
+	if(fadt == 0x0) goto awfull_method;
+	// if(fadt->header.revision < 2) cprintf("Baaah !\n");
+
+	outb(addr.address, fadt->reset_value);
+
+	cprintf("ACPI reboot failed !\n");
+	goto awfull_method;
+
 	/*
 	 * so far whitout ACPI and APM
 	 * the only way to reboot is to
 	 * load a null IDT,
 	 * doing this will create a triple fault and reset the PC
 	 */
+awfull_method:
+	cprintf("System is rebooting !\n");
 	lidt(0, 0);
 }

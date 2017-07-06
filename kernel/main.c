@@ -1,10 +1,19 @@
-#include "types.h"
-#include "defs.h"
-#include "param.h"
-#include "memlayout.h"
-#include "mmu.h"
-#include "proc.h"
-#include "x86.h"
+#include <types.h>
+#include <defs.h>
+#include <param.h>
+#include <memlayout.h>
+#include <mmu.h>
+#include <proc.h>
+#include <x86.h>
+
+/*static ushort detect_bios_area_hw(void) {
+  const ushort *bda_detected_hw_ptr = (ushort *) 0x410;
+  return (ushort) *bda_detected_hw_ptr;
+}
+
+static ushort get_bios_video_type(void) {
+  return (ushort) (detect_bios_area_hw() & 0x30);
+}*/
 
 static void startothers(void);
 static void mpmain(void)  __attribute__((noreturn));
@@ -17,6 +26,7 @@ extern char end[]; // first address after kernel loaded from ELF file
 int
 main(void)
 {
+  // ushort vtype = get_bios_video_type();
   uartearlyinit();
   kinit1(end, P2V(4*1024*1024)); // phys page allocator
   kvmalloc();      // kernel page table
@@ -35,12 +45,20 @@ main(void)
   fileinit();      // file table
   iinit();         // inode cache
   ideinit();       // disk
+
+  /*switch(vtype) {
+    case 0x00: cprintf("Video type is not enabled !\n"); break;
+    case 0x20: cprintf("Video type is colored !\n"); break;
+    case 0x30: cprintf("Video type is monochrome !\n"); break;
+  }*/
+
   if(!ismp)
     timerinit();   // uniprocessor timer
   startothers();   // start other processors
   kinit2(P2V(4*1024*1024), P2V(PHYSTOP)); // must come after startothers()
   userinit();      // first user process
   cpuidinit();
+  uptime_dev_init();
   // Finish setting up this processor in mpmain.
   mpmain();
 }

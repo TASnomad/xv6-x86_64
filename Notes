@@ -1,3 +1,7 @@
+[06/07/2017] TODO:
+add in mkfs capabilities to create directories
+mount char devices and block devices in dev directory
+
 [02/07/2017] BUG:
 sleep in kernel mode cause panic when invoking release function
 bug detected in enable_acpi_operations in poweroff.c, we should

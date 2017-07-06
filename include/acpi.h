@@ -113,10 +113,6 @@ struct acpi_fadt {
   struct acpi_generic_address X_GPE1_block;
 } __attribute__((packed));
 
-struct apci_dsdt {
-  
-} __attribute__((packed));
-
 #define TYPE_LAPIC 0
 #define TYPE_IOAPIC 1
 #define TYPE_INT_SRC_OVERRIDE 2
