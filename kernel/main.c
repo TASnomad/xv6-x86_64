@@ -26,7 +26,6 @@ extern char end[]; // first address after kernel loaded from ELF file
 int
 main(void)
 {
-  // ushort vtype = get_bios_video_type();
   uartearlyinit();
   kinit1(end, P2V(4*1024*1024)); // phys page allocator
   kvmalloc();      // kernel page table
@@ -45,12 +44,6 @@ main(void)
   fileinit();      // file table
   iinit();         // inode cache
   ideinit();       // disk
-
-  /*switch(vtype) {
-    case 0x00: cprintf("Video type is not enabled !\n"); break;
-    case 0x20: cprintf("Video type is colored !\n"); break;
-    case 0x30: cprintf("Video type is monochrome !\n"); break;
-  }*/
 
   if(!ismp)
     timerinit();   // uniprocessor timer
