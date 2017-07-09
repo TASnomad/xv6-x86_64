@@ -3,6 +3,8 @@
 all: xv6.img fs.img
 
 X64 = 1
+# TODO: fix makefile rules for building memfs image
+# MEMFS = 1
 
 ifneq ("$(X64)","")
 BITS = 64
@@ -38,6 +40,7 @@ OBJS := \
 	main.o \
 	mp.o \
 	acpi.o \
+	poweroff.o \
 	picirq.o \
 	pipe.o \
 	proc.o \
@@ -51,6 +54,7 @@ OBJS := \
 	trapasm$(BITS).o \
 	trap.o \
 	uart.o \
+	uptime.o \
 	vectors.o \
 	vm.o \
 	$(XOBJS)
@@ -60,6 +64,9 @@ ifneq ("$(MEMFS)","")
 # instead of mounting the filesystem on ide1
 OBJS := $(filter-out ide.o,$(OBJS)) memide.o
 FSIMAGE := fs.img
+
+all: xv6memfs.img fs.img
+
 endif
 
 KOBJ_DIR = .kobj
@@ -90,23 +97,35 @@ CFLAGS += $(call cc-option, -fno-stack-protector-all, "")
 ASFLAGS = -gdwarf-2 -Wa,-divide -Iinclude $(XFLAGS)
 
 xv6.img: $(OUT)/bootblock $(OUT)/kernel.elf fs.img
-	dd if=/dev/zero of=xv6.img count=10000
-	dd if=$(OUT)/bootblock of=xv6.img conv=notrunc
-	dd if=$(OUT)/kernel.elf of=xv6.img seek=1 conv=notrunc
+	@dd if=/dev/zero of=xv6.img count=10000 > /dev/null 2>&1
+	@echo -e "[\e[1;33mPROCESS\e[1;37m] bzero the first 10M in $@"
+
+	@dd if=$(OUT)/bootblock of=xv6.img conv=notrunc > /dev/null 2>&1
+	@echo -e "[\e[1;33mPROCESS\e[1;37m] appending bootblock in $@"
+
+	@dd if=$(OUT)/kernel.elf of=xv6.img seek=1 conv=notrunc > /dev/null 2>&1
+	@echo -e "[\e[1;32mGOOD\e[1;37m] $@ written"
 
 xv6memfs.img: $(OUT)/bootblock $(OUT)/kernelmemfs.elf
-	dd if=/dev/zero of=xv6memfs.img count=10000
-	dd if=$(OUT)/bootblock of=xv6memfs.img conv=notrunc
-	dd if=$(OUT)/kernelmemfs.elf of=xv6memfs.img seek=1 conv=notrunc
+	@dd if=/dev/zero of=xv6memfs.img count=10000 > /dev/null 2>&1
+	@echo -e "[\e[1;33mPROCESS\e[1;37m] bzero the first 10M in $@"
+
+	@dd if=$(OUT)/bootblock of=xv6memfs.img conv=notrunc > /dev/null 2>&1
+	@echo -e "[\e[1;33mPROCESS\e[1;37m] appending bootblock in $@"
+
+	@dd if=$(OUT)/kernelmemfs.elf of=xv6memfs.img seek=1 conv=notrunc > /dev/null 2>&1
+	@echo -e "[\e[1;32mGOOD\e[1;37m] $@ written"
 
 # kernel object files
 $(KOBJ_DIR)/%.o: kernel/%.c
 	@mkdir -p $(KOBJ_DIR)
-	$(CC) $(CFLAGS) -c -o $@ $<
+	@$(CC) $(CFLAGS) -c -o $@ $<
+	@echo -e "[\e[1;32mGOOD\e[1;37m] $<"
 
 $(KOBJ_DIR)/%.o: kernel/%.S
 	@mkdir -p $(KOBJ_DIR)
-	$(CC) $(ASFLAGS) -c -o $@ $<
+	@$(CC) $(ASFLAGS) -c -o $@ $<
+	@echo -e "[\e[1;32mGOOD\e[1;37m] $<"
 
 UOBJ_DIR = .uobj
 # userspace object files
@@ -116,54 +135,71 @@ CFLAGS_user = $(filter-out -O1 -O2,$(CFLAGS)) -Os
 
 $(UOBJ_DIR)/%.o: user/%.c
 	@mkdir -p $(UOBJ_DIR)
-	$(CC) $(CFLAGS_user) -c -o $@ $<
+	@$(CC) $(CFLAGS_user) -c -o $@ $<
+	@echo -e "[\e[1;32mGOOD\e[1;37m] $<"
 
 $(UOBJ_DIR)/%.o: ulib/%.c
 	@mkdir -p $(UOBJ_DIR)
-	$(CC) $(CFLAGS_user) -c -o $@ $<
+	@$(CC) $(CFLAGS_user) -c -o $@ $<
+	@echo -e "[\e[1;32mGOOD\e[1;37m] $<"
 
 $(UOBJ_DIR)/%.o: ulib/%.S
 	@mkdir -p $(UOBJ_DIR)
-	$(CC) $(ASFLAGS) -c -o $@ $<
+	@$(CC) $(ASFLAGS) -c -o $@ $<
+	@echo -e "[\e[1;32mGOOD\e[1;37m] $<"
 
 # bootblock is optimized for space
 $(OUT)/bootblock: kernel/bootasm.S kernel/bootmain.c
 	@mkdir -p $(OUT)
-	$(CC) -fno-builtin -fno-pic -m32 -nostdinc -Iinclude -Os -o $(OUT)/bootmain.o -c kernel/bootmain.c
-	$(CC) -fno-builtin -fno-pic -m32 -nostdinc -Iinclude -o $(OUT)/bootasm.o -c kernel/bootasm.S
-	$(LD) -m elf_i386 -nodefaultlibs --omagic -e start -Ttext 0x7C00 \
+	@$(CC) -fno-builtin -fno-pic -m32 -nostdinc -Iinclude -Os -o $(OUT)/bootmain.o -c kernel/bootmain.c
+	@$(CC) -fno-builtin -fno-pic -m32 -nostdinc -Iinclude -o $(OUT)/bootasm.o -c kernel/bootasm.S
+	@$(LD) -m elf_i386 -nodefaultlibs --omagic -e start -Ttext 0x7C00 \
 		-o $(OUT)/bootblock.o $(OUT)/bootasm.o $(OUT)/bootmain.o
-	$(OBJDUMP) -S $(OUT)/bootblock.o > $(OUT)/bootblock.asm
-	$(OBJCOPY) -S -O binary -j .text $(OUT)/bootblock.o $(OUT)/bootblock
-	tools/sign.pl $(OUT)/bootblock
+	@$(OBJDUMP) -S $(OUT)/bootblock.o > $(OUT)/bootblock.asm
+	@$(OBJCOPY) -S -O binary -j .text $(OUT)/bootblock.o $(OUT)/bootblock
+	@tools/sign.pl $(OUT)/bootblock
+	@echo -e "[\e[1;32mGOOD\e[1;37m] $<"
 
 $(OUT)/entryother: kernel/entryother.S
 	@mkdir -p $(OUT)
-	$(CC) $(CFLAGS) -fno-pic -nostdinc -I. -o $(OUT)/entryother.o -c kernel/entryother.S
-	$(LD) $(LDFLAGS) --omagic -e start -Ttext 0x7000 -o $(OUT)/bootblockother.o $(OUT)/entryother.o
-	$(OBJCOPY) -S -O binary -j .text $(OUT)/bootblockother.o $(OUT)/entryother
-	$(OBJDUMP) -S $(OUT)/bootblockother.o > $(OUT)/entryother.asm
+	@$(CC) $(CFLAGS) -fno-pic -nostdinc -I. -o $(OUT)/entryother.o -c kernel/entryother.S
+	@$(LD) $(LDFLAGS) --omagic -e start -Ttext 0x7000 -o $(OUT)/bootblockother.o $(OUT)/entryother.o
+	@$(OBJCOPY) -S -O binary -j .text $(OUT)/bootblockother.o $(OUT)/entryother
+	@$(OBJDUMP) -S $(OUT)/bootblockother.o > $(OUT)/entryother.asm
+	@echo -e "[\e[1;32mGOOD\e[1;37m] $<"
 
 INITCODESRC = kernel/initcode$(BITS).S
 $(OUT)/initcode: $(INITCODESRC)
 	@mkdir -p $(OUT)
-	$(CC) $(CFLAGS) -nostdinc -I. -o $(OUT)/initcode.o -c $(INITCODESRC)
-	$(LD) $(LDFLAGS) --omagic -e start -Ttext 0 -o $(OUT)/initcode.out out/initcode.o
-	$(OBJCOPY) -S -O binary out/initcode.out $(OUT)/initcode
-	$(OBJDUMP) -S $(OUT)/initcode.o > $(OUT)/initcode.asm
+	@$(CC) $(CFLAGS) -nostdinc -I. -o $(OUT)/initcode.o -c $(INITCODESRC)
+	@$(LD) $(LDFLAGS) --omagic -e start -Ttext 0 -o $(OUT)/initcode.out out/initcode.o
+	@$(OBJCOPY) -S -O binary out/initcode.out $(OUT)/initcode
+	@$(OBJDUMP) -S $(OUT)/initcode.o > $(OUT)/initcode.asm
+	@echo -e "[\e[1;32mGOOD\e[1;37m] $<"
 
 ENTRYCODE = $(KOBJ_DIR)/entry$(BITS).o
 LINKSCRIPT = kernel/kernel$(BITS).ld
 $(OUT)/kernel.elf: $(OBJS) $(ENTRYCODE) $(OUT)/entryother $(OUT)/initcode $(LINKSCRIPT) $(FSIMAGE)
-	$(LD) $(LDFLAGS) -T $(LINKSCRIPT) -o $(OUT)/kernel.elf \
+	@$(LD) $(LDFLAGS) -T $(LINKSCRIPT) -o $(OUT)/kernel.elf \
 		$(ENTRYCODE) $(OBJS) \
 		-b binary $(OUT)/initcode $(OUT)/entryother $(FSIMAGE)
-	$(OBJDUMP) -S $(OUT)/kernel.elf > $(OUT)/kernel.asm
-	$(OBJDUMP) -t $(OUT)/kernel.elf | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $(OUT)/kernel.sym
+	@$(OBJDUMP) -S $(OUT)/kernel.elf > $(OUT)/kernel.asm
+	@$(OBJDUMP) -t $(OUT)/kernel.elf | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $(OUT)/kernel.sym
+	@echo -e "[\e[1;32mGOOD\e[1;37m] $<"
+
+$(OUT)/kernelmemfs.elf: $(OBJS) $(ENTRYCODE) $(OUT)/entryother $(OUT)/initcode $(LINKSCRIPT) $(FSIMAGE)
+	@$(LD) $(LDFLAGS) -T $(LINKSCRIPT) -o $(OUT)/kernelmemfs.elf \
+		$(ENTRYCODE) $(OBJS) \
+		-b binary $(OUT)/initcode $(OUT)/entryother $(FSIMAGE)
+	@$(OBJDUMP) -S $(OUT)/kernelmemfs.elf > $(OUT)/kernelmemfs.asm
+	@$(OBJDUMP) -t $(OUT)/kernelmemfs.elf | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $(OUT)/kernelmemfs.sym
+	@echo -e "[\e[1;32mGOOD\e[1;37m] $<"
+
 
 MKVECTORS = tools/vectors$(BITS).pl
 kernel/vectors.S: $(MKVECTORS)
 	perl $(MKVECTORS) > kernel/vectors.S
+	@echo -e "[\e[1;32mGOOD\e[1;37m] $<"
 
 ULIB := \
 	ulib.o \
@@ -188,27 +224,31 @@ LDFLAGS_user += --section-start=.text=0x0 # same of "-Ttext="
 
 $(FS_DIR)/%: $(UOBJ_DIR)/%.o $(ULIB)
 	@mkdir -p $(FS_DIR) $(OUT)
-	$(LD) $(LDFLAGS_user) -o $@ $^
-	$(OBJDUMP) -S $@ > $(OUT)/$*.asm
-	$(OBJDUMP) -t $@ | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $(OUT)/$*.sym
+	@$(LD) $(LDFLAGS_user) -o $@ $^
+	@$(OBJDUMP) -S $@ > $(OUT)/$*.asm
+	@$(OBJDUMP) -t $@ | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $(OUT)/$*.sym
+	@echo -e "[\e[1;32mGOOD\e[1;37m] $<"
 
 $(FS_DIR)/forktest: $(UOBJ_DIR)/forktest.o $(ULIB)
 	@mkdir -p $(FS_DIR)
 	# forktest has less library code linked in - needs to be small
 	# in order to be able to max out the proc table.
-	$(LD) $(LDFLAGS_user) -o $(FS_DIR)/forktest \
+	@$(LD) $(LDFLAGS_user) -o $(FS_DIR)/forktest \
 		$(UOBJ_DIR)/forktest.o \
 		$(UOBJ_DIR)/ulib.o \
 		$(UOBJ_DIR)/usys.o
-	$(OBJDUMP) -S $(FS_DIR)/forktest > $(OUT)/forktest.asm
+	@$(OBJDUMP) -S $(FS_DIR)/forktest > $(OUT)/forktest.asm
+	@echo -e "[\e[1;32mGOOD\e[1;37m] $<"
 
 $(OUT)/mkfs: tools/mkfs.c include/fs.h
 	@mkdir -p $(OUT)
-	$(HOST_CC) -Werror -Wall -o $@ tools/mkfs.c
+	@$(HOST_CC) -Werror -Wall -o $@ tools/mkfs.c
+	@echo -e "[\e[1;32mGOOD\e[1;37m] $<"
 
 out/opfs: tools/opfs.c tools/libfs.c
 	@mkdir -p $(OUT)
-	$(HOST_CC) -Werror -Wall -std=c99 -pedantic -o $@ $^
+	@$(HOST_CC) -Werror -Wall -std=c99 -pedantic -o $@ $^
+	@echo -e "[\e[1;32mGOOD\e[1;37m] $<"
 
 # Prevent deletion of intermediate files, e.g. cat.o, after first build, so
 # that disk image changes after first build are persistent until clean.  More
@@ -238,16 +278,20 @@ UPROGS := $(addprefix $(FS_DIR)/,$(UPROGS))
 
 $(FS_DIR)/README: README
 	@mkdir -p $(FS_DIR)
+	@mkdir -p $(FS_DIR)/dev
 	cp -f README $(FS_DIR)/README
+	cp -f README.64bit $(FS_DIR)/README64
 
-fs.img: $(OUT)/mkfs $(FS_DIR)/README $(UPROGS)
-	$(OUT)/mkfs $@ $(filter-out $(OUT)/mkfs,$^)
+fs.img: $(OUT)/mkfs $(FS_DIR)/README $(FS_DIR)/README64 $(UPROGS)
+	@$(OUT)/mkfs $@ $(filter-out $(OUT)/mkfs,$^)
 
 -include */*.d
 
 clean: 
 	rm -rf $(OUT) $(FS_DIR) $(UOBJ_DIR) $(KOBJ_DIR)
 	rm -f kernel/vectors.S xv6.img xv6memfs.img fs.img .gdbinit
+	@echo -e "[\e[1;32mDONE\e[1;37m]"
+
 
 # run in emulators
 
@@ -270,7 +314,7 @@ qemu: fs.img xv6.img
 
 qemu-memfs: xv6memfs.img
 	@echo Ctrl+a h for help
-	$(QEMU) xv6memfs.img -smp $(CPUS)
+	$(QEMU) xv6memfs.img -smp $(CPUS) -m 224M
 
 qemu-nox: fs.img xv6.img
 	@echo Ctrl+a h for help
@@ -296,4 +340,4 @@ qemu-nox-gdb: fs.img xv6.img .gdbinit .gdbinit64 .gdbinit64-2
 	$(QEMU) -nographic $(QEMUOPTS) -S $(QEMUGDB)
 
 .DEFAULT:
-	@echo "No rule to make target $@"
+	@echo -e "[\e[1;31mFAILURE\e[1;37m] no rule to make target $@"

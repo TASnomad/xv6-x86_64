@@ -23,6 +23,9 @@ main(void)
   dup(0);  // stderr
 
   mknod("cpuid", CPUID, 1);
+  mknod("uptime", UPTIME_DEV, 1);
+
+  printf(1, "Welcome to xv6 userspace !\n");
 
   for(;;){
     printf(1, "init: starting sh\n");

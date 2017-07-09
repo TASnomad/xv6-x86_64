@@ -4,17 +4,17 @@
 
 #include <stdarg.h>
 
-#include "types.h"
-#include "defs.h"
-#include "param.h"
-#include "traps.h"
-#include "spinlock.h"
-#include "fs.h"
-#include "file.h"
-#include "memlayout.h"
-#include "mmu.h"
-#include "proc.h"
-#include "x86.h"
+#include <types.h>
+#include <defs.h>
+#include <param.h>
+#include <traps.h>
+#include <spinlock.h>
+#include <fs.h>
+#include <file.h>
+#include <memlayout.h>
+#include <mmu.h>
+#include <proc.h>
+#include <x86.h>
 
 static void consputc(int);
 
@@ -139,6 +139,30 @@ panic(char *s)
 #define CRTPORT 0x3d4
 static ushort *crt = (ushort*)P2V(0xb8000);  // CGA memory
 
+void clear_screen(void) {
+  int i = 0;
+
+  if(crt == 0x0)
+    panic("clear_screen: is it even possible ?!");
+
+  /**
+   * Dummy loop to override existing content
+   * NOTE: clear the entire screen
+   * maybe we should clear only one part of the screen
+   */
+  while(i < 80 * 25 * 2) {
+    *(crt + i) = ' ';
+    *(crt + i + 1) = 0x0700;
+    i += 2;
+  }
+
+  /* Updating cursor position to 0 */
+  outb(CRTPORT, 0x0F);
+  outb(CRTPORT + 1, (uchar) (0x0 & 0xFF));
+  outb(CRTPORT, 0x0E);
+  outb(CRTPORT + 1, (uchar) ((0x0 >> 8) & 0xFF));
+}
+
 static void
 cgaputc(int c)
 {
@@ -205,8 +229,17 @@ consoleintr(int (*getc)(void))
   acquire(&input.lock);
   while((c = getc()) >= 0){
     switch(c){
+
     case C('Z'): // reboot
-      lidt(0,0);
+      reboot();
+      break;
+    case C('A'):
+      poweroff();
+      break;
+
+    case C('L'):
+      clear_screen();
+      consputc('\n');
       break;
     case C('P'):  // Process listing.
       procdump();

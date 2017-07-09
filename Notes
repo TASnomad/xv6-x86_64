@@ -1,3 +1,12 @@
+[06/07/2017] TODO:
+add in mkfs capabilities to create directories
+mount char devices and block devices in dev directory
+
+[02/07/2017] BUG:
+sleep in kernel mode cause panic when invoking release function
+bug detected in enable_acpi_operations in poweroff.c, we should
+create a simple wrapper with ms seconds or use cpu timestamp to sleep in kernel mode
+
 bootmain.c doesn't work right if the ELF sections aren't
 sector-aligned. so you can't use ld -N. and the sections may also need
 to be non-zero length, only really matters for tiny "kernels".
