@@ -57,6 +57,15 @@ printint(int xx, int base, int sign)
   while(--i >= 0)
     consputc(buf[i]);
 }
+
+static void print_unsigned_long(uint64 value) {
+  uint upperval = (uint) value;
+  uint lowerval = (uint) (value >> 32);
+
+  printint(upperval, 10, 0);
+  printint(lowerval, 10, 0);
+}
+
 //PAGEBREAK: 50
 
 // Print to the console. only understands %d, %x, %p, %s.
@@ -99,6 +108,9 @@ cprintf(char *fmt, ...)
         s = "(null)";
       for(; *s; s++)
         consputc(*s);
+      break;
+    case 'l':
+      print_unsigned_long(va_arg(ap, uint64));
       break;
     case '%':
       consputc('%');

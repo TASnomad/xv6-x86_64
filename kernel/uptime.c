@@ -14,7 +14,7 @@ int read_uptime(struct inode *ip, char *buffer, int count) {
 	acquire(&tickslock);
 	_ticks = ticks;
 	release(&tickslock);
-	cprintf("%x\n", _ticks);
+	cprintf("%l\n", _ticks);
 	return 0;
 }
 
