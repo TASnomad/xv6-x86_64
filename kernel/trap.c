@@ -8,6 +8,8 @@
 #include <traps.h>
 #include <spinlock.h>
 
+static uint trap_need_reboot[] = { 0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0 };
+
 // Interrupt descriptor table (shared by all CPUs).
 struct gatedesc idt[256];
 extern uintp vectors[];  // in vectors.S: array of 256 entry pointers
@@ -81,9 +83,13 @@ trap(struct trapframe *tf)
   default:
     if(proc == 0 || (tf->cs&3) == 0){
       // In kernel, it must be our mistake.
-      cprintf("unexpected trap %d from cpu %d eip %x (cr2=0x%x)\n",
-              tf->trapno, cpu->id, tf->eip, rcr2());
-      panic("trap");
+      cprintf("unexpected trap %d from cpu %d eip %x (cr2=0x%x)\nPriveleg execution mode: %d\n",
+              tf->trapno, cpu->id, tf->eip, rcr2(), tf->cs);
+
+      if(*(trap_need_reboot + tf->trapno))
+        reboot();
+      else
+        panic("trap");
     }
     // In user space, assume process misbehaved.
     cprintf("pid %d %s: trap %d err %d on cpu %d "
