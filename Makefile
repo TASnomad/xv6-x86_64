@@ -276,6 +276,13 @@ UPROGS := \
 
 UPROGS := $(addprefix $(FS_DIR)/,$(UPROGS))
 
+USER_SUBDIRS := \
+	dev \
+	usr \
+	src
+
+# USER_SUBDIRS := $(addprefix $(FS_DIR)/, $(USER_SUBDIRS))
+
 $(FS_DIR)/README: README
 	@mkdir -p $(FS_DIR)
 	@mkdir -p $(FS_DIR)/dev
@@ -283,13 +290,17 @@ $(FS_DIR)/README: README
 	cp -f README.64bit $(FS_DIR)/README64
 
 fs.img: $(OUT)/mkfs $(FS_DIR)/README $(FS_DIR)/README64 $(UPROGS)
-	@$(OUT)/mkfs $@ $(filter-out $(OUT)/mkfs,$^)
+	$(OUT)/mkfs $@ $(filter-out $(OUT)/mkfs,$^)
+	@echo -e "[\e[1;32mDONE\e[1;37m] minimal $@ is builded !"
+
+buildfsdirs: $(OUT)/opfs fs.img
+	$(shell ./fs_dirs.sh $(USER_SUBDIRS))
 
 -include */*.d
 
 clean: 
 	rm -rf $(OUT) $(FS_DIR) $(UOBJ_DIR) $(KOBJ_DIR)
-	rm -f kernel/vectors.S xv6.img xv6memfs.img fs.img .gdbinit
+	rm -f kernel/vectors.S xv6.img xv6memfs.img fs.img xv6.iso .gdbinit
 	@echo -e "[\e[1;32mDONE\e[1;37m]"
 
 
