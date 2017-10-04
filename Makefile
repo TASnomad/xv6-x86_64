@@ -325,7 +325,7 @@ qemu: fs.img xv6.img
 
 qemu-memfs: xv6memfs.img
 	@echo Ctrl+a h for help
-	$(QEMU) xv6memfs.img -smp $(CPUS) -m 224M
+	$(QEMU) xv6memfs.img -smp $(CPUS) -m 225M
 
 qemu-nox: fs.img xv6.img
 	@echo Ctrl+a h for help
