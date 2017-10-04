@@ -94,7 +94,7 @@ CFLAGS += -g -Wall -MD -fno-omit-frame-pointer
 CFLAGS += -ffreestanding -fno-common -nostdlib -Iinclude -gdwarf-2 $(XFLAGS) $(OPT)
 CFLAGS += $(call cc-option, -fno-stack-protector, "")
 CFLAGS += $(call cc-option, -fno-stack-protector-all, "")
-ASFLAGS = -gdwarf-2 -Wa,-divide -Iinclude $(XFLAGS)
+ASFLAGS = -gdwarf-2 -Wa,-divide -Iinclude $(XFLAGS) -fno-pie
 
 xv6.img: $(OUT)/bootblock $(OUT)/kernel.elf fs.img
 	@dd if=/dev/zero of=xv6.img count=10000 > /dev/null 2>&1
